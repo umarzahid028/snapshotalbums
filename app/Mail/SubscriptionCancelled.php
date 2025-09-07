@@ -43,7 +43,7 @@ class SubscriptionCancelled extends Mailable
                         'user' => $this->user,
                         'subscription' => $this->subscription,
                         'accessEndDate' => $this->accessEndDate,
-                        'reactivateUrl' => route('stripe.reactivate-subscription'),
+                        'reactivateUrl' => env('APP_URL') . '/stripe/reactivate-subscription',
                         'supportEmail' => config('mail.support_email', 'support@snapshotalbums.com')
                     ]);
     }

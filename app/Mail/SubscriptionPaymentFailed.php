@@ -41,7 +41,7 @@ class SubscriptionPaymentFailed extends Mailable
                         'user' => $this->user,
                         'subscription' => $this->subscription,
                         'retryDate' => $this->retryDate,
-                        'updateUrl' => route('stripe.payment'),
+                        'updateUrl' => env('APP_URL') . '/stripe/payment',
                         'supportEmail' => config('mail.support_email', 'support@snapshotalbums.com')
                     ]);
     }

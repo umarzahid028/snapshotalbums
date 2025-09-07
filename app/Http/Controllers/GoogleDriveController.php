@@ -29,7 +29,7 @@ class GoogleDriveController extends Controller
         $this->gClient->setApplicationName('snapshot'); // ADD YOUR AUTH2 APPLICATION NAME (WHEN YOUR GENERATE SECRATE KEY)
         $this->gClient->setClientId('1021502306713-dlnt415occ7pi1g5gf47bemggb9m3fnf.apps.googleusercontent.com');
         $this->gClient->setClientSecret('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');
-        $this->gClient->setRedirectUri('https://snapshotalbums.dev/auth/google/callback');
+        $this->gClient->setRedirectUri(env('APP_URL') . '/auth/google/callback');
         $this->gClient->setDeveloperKey('AIzaSyBILqtwxn5e7RExbFibozAatwyHSAuNS4c');
         $this->gClient->setScopes(array(               
             'https://www.googleapis.com/auth/drive.file',

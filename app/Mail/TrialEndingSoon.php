@@ -40,7 +40,7 @@ class TrialEndingSoon extends Mailable
                     ->with([
                         'user' => $this->user,
                         'trialEndDate' => $this->trialEndDate,
-                        'upgradeUrl' => route('admin.stripe'),
+                        'upgradeUrl' => env('APP_URL') . '/stripe',
                         'supportEmail' => config('mail.support_email', 'support@snapshotalbums.com')
                     ]);
     }
