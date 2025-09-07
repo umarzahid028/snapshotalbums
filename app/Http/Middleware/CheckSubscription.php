@@ -29,9 +29,14 @@ class CheckSubscription
             return $next($request);
         }
 
+        // Check if user is in grace period after payment failure
+        if ($this->isInGracePeriod($user)) {
+            return redirect('/stripe/payment')->with('warning', 'Your payment failed. Please update your payment method within ' . $user->grace_period_ends_at->diffForHumans() . ' to restore access.');
+        }
+
         // Check if user has failed payment (subscription exists but not active)
         if ($this->hasFailedPayment($user)) {
-            return redirect('/pricing')->with('error', 'Your payment failed. Please update your payment method to restore access.');
+            return redirect('/stripe/payment')->with('error', 'Your payment failed. Please update your payment method to restore access.');
         }
 
         // If trial has expired, redirect to Stripe
@@ -88,5 +93,16 @@ class CheckSubscription
     {
         // User has a subscription ID but subscription is not active
         return $user->stripe_subscription_id && !$user->subscription_active;
+    }
+    
+    /**
+     * Check if user is in grace period after payment failure
+     */
+    private function isInGracePeriod($user)
+    {
+        return $user->payment_failed_at && 
+               $user->grace_period_ends_at && 
+               now()->isBefore($user->grace_period_ends_at) &&
+               !$user->subscription_active;
     }
 }

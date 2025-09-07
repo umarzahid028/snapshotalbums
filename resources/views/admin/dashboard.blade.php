@@ -195,21 +195,36 @@
                   </div>
                 </div>
               @elseif($user->stripe_subscription_id && !$user->subscription_active)
-                <div class="alert alert-warning mb-4">
-                  <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                      <strong>⚠️ Subscription Cancelled</strong>
-                      <br>
-                      <small>Your subscription has been cancelled. You will lose access at the end of your current billing period.</small>
-                    </div>
-                    <div>
-                      <form method="POST" action="{{ route('stripe.reactivate-subscription') }}" style="display: inline;">
-                        @csrf
-                        <button type="submit" class="btn btn-success btn-sm">Reactivate Subscription</button>
-                      </form>
+                @if($user->payment_failed_at && $user->grace_period_ends_at && now()->isBefore($user->grace_period_ends_at))
+                  <div class="alert alert-danger mb-4">
+                    <div class="d-flex justify-content-between align-items-center">
+                      <div>
+                        <strong>💳 Payment Failed - Grace Period Active</strong>
+                        <br>
+                        <small>Your payment failed on {{ $user->payment_failed_at->format('M d, Y') }}. You have until {{ $user->grace_period_ends_at->format('M d, Y \a\t g:i A') }} to update your payment method.</small>
+                      </div>
+                      <div>
+                        <a href="{{ route('stripe.payment') }}" class="btn btn-danger btn-sm">Update Payment Method</a>
+                      </div>
                     </div>
                   </div>
-                </div>
+                @else
+                  <div class="alert alert-warning mb-4">
+                    <div class="d-flex justify-content-between align-items-center">
+                      <div>
+                        <strong>⚠️ Subscription Cancelled</strong>
+                        <br>
+                        <small>Your subscription has been cancelled. You will lose access at the end of your current billing period.</small>
+                      </div>
+                      <div>
+                        <form method="POST" action="{{ route('stripe.reactivate-subscription') }}" style="display: inline;">
+                          @csrf
+                          <button type="submit" class="btn btn-success btn-sm">Reactivate Subscription</button>
+                        </form>
+                      </div>
+                    </div>
+                  </div>
+                @endif
               @endif
 
             <div class="col-xl-12">

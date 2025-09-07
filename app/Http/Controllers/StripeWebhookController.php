@@ -4,7 +4,11 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use App\Models\User;
+use App\Mail\SubscriptionPaymentFailed;
+use App\Mail\SubscriptionCancelled;
+use App\Mail\TrialEndingSoon;
 use Stripe;
 
 class StripeWebhookController extends Controller
@@ -96,11 +100,20 @@ class StripeWebhookController extends Controller
                     $user->subscription_active = false;
                 }
                 
+                // Set grace period - user has 3 days to fix payment
+                $user->payment_failed_at = now();
+                $user->grace_period_ends_at = now()->addDays(3);
+                
                 $user->save();
                 Log::info('User subscription deactivated due to payment failure: ' . $user->email);
                 
-                // TODO: Send email notification to user about payment failure
-                // TODO: Implement retry logic or grace period
+                // Send email notification to user about payment failure
+                try {
+                    Mail::to($user->email)->send(new SubscriptionPaymentFailed($user, $invoice));
+                    Log::info('Payment failure email sent to: ' . $user->email);
+                } catch (\Exception $e) {
+                    Log::error('Failed to send payment failure email to ' . $user->email . ': ' . $e->getMessage());
+                }
             }
         }
     }
@@ -114,13 +127,32 @@ class StripeWebhookController extends Controller
         if ($user) {
             if ($subscription->status === 'active') {
                 $user->subscription_active = true;
+                // Clear any payment failure flags if subscription is now active
+                $user->payment_failed_at = null;
+                $user->grace_period_ends_at = null;
             } elseif ($subscription->status === 'canceled' || $subscription->status === 'incomplete_expired') {
                 $user->subscription_active = false;
                 $user->plan = 'free'; // Reset to free plan
+                
+                // Send cancellation email
+                try {
+                    Mail::to($user->email)->send(new SubscriptionCancelled($user, $subscription));
+                    Log::info('Cancellation email sent to: ' . $user->email);
+                } catch (\Exception $e) {
+                    Log::error('Failed to send cancellation email to ' . $user->email . ': ' . $e->getMessage());
+                }
             } elseif ($subscription->cancel_at_period_end) {
                 // Subscription is cancelled but still active until period end
                 $user->subscription_active = false;
                 Log::info('Subscription cancelled at period end for user: ' . $user->email);
+                
+                // Send cancellation email for end-of-period cancellation
+                try {
+                    Mail::to($user->email)->send(new SubscriptionCancelled($user, $subscription));
+                    Log::info('End-of-period cancellation email sent to: ' . $user->email);
+                } catch (\Exception $e) {
+                    Log::error('Failed to send end-of-period cancellation email to ' . $user->email . ': ' . $e->getMessage());
+                }
             }
             
             $user->save();
@@ -150,8 +182,13 @@ class StripeWebhookController extends Controller
         $user = User::where('stripe_subscription_id', $subscription->id)->first();
         
         if ($user) {
-            // TODO: Send email notification about trial ending
-            Log::info('Trial ending soon for user: ' . $user->email);
+            // Send email notification about trial ending
+            try {
+                Mail::to($user->email)->send(new TrialEndingSoon($user));
+                Log::info('Trial ending email sent to: ' . $user->email);
+            } catch (\Exception $e) {
+                Log::error('Failed to send trial ending email to ' . $user->email . ': ' . $e->getMessage());
+            }
         }
     }
 }

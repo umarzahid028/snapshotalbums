@@ -19,7 +19,7 @@ class User extends Authenticatable
      * @var array
      */
     protected $fillable = [
-        'name', 'email', 'password', 'company_name', 'role_id', 'google_id','access_token','refresh_token','stripe_customer_id','stripe_subscription_id','renew_status','status','plan','subscription_active','trial_ends_at'
+        'name', 'email', 'password', 'company_name', 'role_id', 'google_id','access_token','refresh_token','stripe_customer_id','stripe_subscription_id','renew_status','status','plan','subscription_active','trial_ends_at','payment_failed_at','grace_period_ends_at'
     ];
 
     /**
@@ -39,6 +39,8 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
         'trial_ends_at' => 'datetime',
+        'payment_failed_at' => 'datetime',
+        'grace_period_ends_at' => 'datetime',
     ];
 
     public function role()
