@@ -7,6 +7,69 @@
         .bgc-f7{
             background-color:transparent !important;
         }
+        .error-message-container {
+            margin: 15px 0;
+            padding: 10px;
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            border-radius: 4px;
+            color: #721c24;
+        }
+        .error-message-container.hide {
+            display: none;
+        }
+        .has-error input {
+            border-color: #dc3545;
+        }
+        .card-validation {
+            margin-bottom: 15px;
+        }
+        .card-validation .form-control {
+            margin-bottom: 10px;
+        }
+        .card-type-indicator {
+            margin-top: 5px;
+            font-size: 12px;
+            color: #666;
+        }
+        .valid-card {
+            border-color: #28a745 !important;
+        }
+        .invalid-card {
+            border-color: #dc3545 !important;
+        }
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+        #payment-element {
+            margin: 20px 0;
+        }
+        .payment-element-container {
+            background: #fff;
+            border: 1px solid #e1e5e9;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .stripe-button {
+            background: #635bff;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .stripe-button:hover {
+            background: #5a52e5;
+        }
+        .stripe-button:disabled {
+            background: #aab7c4;
+            cursor: not-allowed;
+        }
     </style>
 </head>
 <div class="ps-widget bgc-white bdrs12 default-box-shadow2 p30 mb30 overflow-hidden position-relative">
@@ -19,63 +82,131 @@
 <div class="error-message-container">
     <span class="error-message"></span>
 </div>
-    <h1 style="color: black;">Snapshot Albums Premium - $99/year</h1>
-    <p>Complete the payment information below to enable access to <strong>Premium</strong> features.<br>
+    @php
+        $selectedPlan = session('selected_plan');
+        if (!$selectedPlan) {
+            $selectedPlan = [
+                'name' => 'premium',
+                'price' => 999,
+                'description' => 'Premium Plan - Unlimited Albums',
+                'features' => ['Unlimited Albums', 'All Premium Features', 'Priority Support']
+            ];
+        }
+        $priceDisplay = '$' . number_format($selectedPlan['price'] / 100, 2);
+        $planName = ucfirst($selectedPlan['name']);
+    @endphp
+    
+    <h1 style="color: black;">Snapshot Albums {{ $planName }} - {{ $priceDisplay }}/month</h1>
+    <p>Complete the payment information below to enable access to <strong>{{ $planName }}</strong> features.<br>
     Payment is fulfilled securely by Stripe&trade;</p>
-    <!-- <form class="form-style1"> -->
-    <form role="form" action="{{ route('stripe.post') }}" method="post" class="require-validation" data-cc-on-file="false" data-stripe-publishable-key="{{ env('STRIPE_KEY') }}" id="payment-form">
-    @csrf
-    <div class="row">
-        <div class="col-sm-6 col-xl-12">
-            <div class="mb20 required">
-                <label class="heading-color ff-heading fw600 mb10">Name on Card</label>
-                <input type="text" placeholder="Ex. John Smith" size="4" class="form-control">
-            </div>
-            <div class="mb20 required">
-                <label class="heading-color ff-heading fw600 mb10">Card Number</label>
-                <input autocomplete='off' type="text" size="20" class="form-control card-number" maxlength="16">
-                <!-- Set maxlength to 16 for a 16-digit card number -->
-            </div>
-        </div>
-        <div class="col-4 mb20 cvc required">
-            <label class="heading-color ff-heading fw600 mb10">CVC</label>
-            <input type="text" autocomplete='off' placeholder="***" size="3" maxlength="3" class="form-control card-cvc">
-            <!-- Set maxlength to 3 for a 3-digit CVC -->
-        </div>
-        <div class="col-4 mb20 expiration required">
-            <label class="heading-color ff-heading fw600 mb10">Expiration Month</label>
-            <input type="text" placeholder="MM" size="2" maxlength="2" class="form-control card-expiry-month">
-            <!-- Set maxlength to 2 for a 2-digit month (01-12) -->
-        </div>
-        <div class="col-4 mb20 expiration required">
-            <label class="heading-color ff-heading fw600 mb10">Expiration Year</label>
-            <input type="text" placeholder="YYYY" size="4" maxlength="4" class="form-control card-expiry-year">
-            <!-- Set maxlength to 4 for a 4-digit year (e.g., 2023) -->
-        </div>
-        <div class="col-md-12">
-            <div class="text-end">
-                <button class="ud-btn btn-thm" type="submit">Pay Now ($99)<i class="fal fa-arrow-right-long"></i></button>
-            </div>
-        </div>
+    
+    <!-- Plan Details -->
+    <div class="alert alert-info">
+        <h4>{{ $planName }} Plan Features:</h4>
+        <ul>
+            @foreach($selectedPlan['features'] as $feature)
+                <li>{{ $feature }}</li>
+            @endforeach
+        </ul>
+        <strong>Price: {{ $priceDisplay }}/month</strong>
     </div>
-</form>
+    
+    <!-- Hidden field to store plan info -->
+    <input type="hidden" name="plan_name" value="{{ $selectedPlan['name'] }}">
+    <input type="hidden" name="plan_price" value="{{ $selectedPlan['price'] }}">
+    
+    <!-- Stripe Elements Form -->
+    <form id="payment-form" action="{{ route('stripe.post') }}" method="post">
+        @csrf
+        <input type="hidden" name="plan_name" value="{{ $selectedPlan['name'] }}">
+        <input type="hidden" name="plan_price" value="{{ $selectedPlan['price'] }}">
+        
+        <div class="payment-element-container">
+            <div id="payment-element">
+                <!-- Stripe Elements will be inserted here -->
+            </div>
+        </div>
+        
+        <div class="text-end">
+            <button id="submit" class="stripe-button">
+                <span id="button-text">Pay Now ({{ $priceDisplay }})</span>
+                <div id="spinner" class="spinner hidden"></div>
+            </button>
+        </div>
+        
+        <div id="payment-message" class="hidden"></div>
+    </form>
 
 </div>
-<script type="text/javascript" src="https://js.stripe.com/v2/"></script>
+<script src="https://js.stripe.com/v3/"></script>
 <script type="text/javascript">
     $(function() {
         var $form = $(".require-validation");
+        var $errorMessageContainer = $form.find('.error-message-container');
+        var $errorMessage = $form.find('.error-message');
+        var $submitButton = $form.find('button[type="submit"]');
+
+        // Real-time card number validation
+        $('.card-number').on('input', function() {
+            var cardNumber = $(this).val().replace(/\s/g, '');
+            var $indicator = $('.card-type-indicator');
+            
+            if (cardNumber.length >= 13) {
+                // Basic card type detection
+                if (cardNumber.startsWith('4')) {
+                    $indicator.text('✓ Visa');
+                    $(this).removeClass('invalid-card').addClass('valid-card');
+                } else if (cardNumber.startsWith('5') || cardNumber.startsWith('2')) {
+                    $indicator.text('✓ Mastercard');
+                    $(this).removeClass('invalid-card').addClass('valid-card');
+                } else if (cardNumber.startsWith('3')) {
+                    $indicator.text('✓ American Express');
+                    $(this).removeClass('invalid-card').addClass('valid-card');
+                } else {
+                    $indicator.text('Unknown card type');
+                    $(this).removeClass('valid-card').addClass('invalid-card');
+                }
+            } else {
+                $indicator.text('');
+                $(this).removeClass('valid-card invalid-card');
+            }
+        });
+
+        // Real-time CVC validation
+        $('.card-cvc').on('input', function() {
+            var cvc = $(this).val();
+            if (cvc.length >= 3) {
+                $(this).removeClass('invalid-card').addClass('valid-card');
+            } else {
+                $(this).removeClass('valid-card invalid-card');
+            }
+        });
+
+        // Real-time expiration validation
+        $('.card-expiry-month, .card-expiry-year').on('input', function() {
+            var month = $('.card-expiry-month').val();
+            var year = $('.card-expiry-year').val();
+            
+            if (month && year) {
+                var currentDate = new Date();
+                var currentYear = currentDate.getFullYear();
+                var currentMonth = currentDate.getMonth() + 1;
+                
+                if (parseInt(year) > currentYear || (parseInt(year) == currentYear && parseInt(month) >= currentMonth)) {
+                    $('.card-expiry-month, .card-expiry-year').removeClass('invalid-card').addClass('valid-card');
+                } else {
+                    $('.card-expiry-month, .card-expiry-year').removeClass('valid-card').addClass('invalid-card');
+                }
+            }
+        });
 
         $('form.require-validation').bind('submit', function(e) {
-            var $form = $(".require-validation"),
-                inputSelector = ['input[type=email]', 'input[type=password]',
-                    'input[type=text]', 'input[type=file]',
-                    'textarea'
-                ].join(', '),
-                $inputs = $form.find('.required').find(inputSelector),
-                $errorMessageContainer = $form.find('.error-message-container'), // Updated error message container selector
-                $errorMessage = $form.find('.error-message'),
-                valid = true;
+            var inputSelector = ['input[type=email]', 'input[type=password]',
+                'input[type=text]', 'input[type=file]',
+                'textarea'
+            ].join(', '),
+            $inputs = $form.find('.required').find(inputSelector),
+            valid = true;
 
             // Clear previous error messages
             $errorMessageContainer.addClass('hide');
@@ -87,12 +218,23 @@
                 if ($input.val() === '') {
                     $input.parent().addClass('has-error');
                     $errorMessageContainer.removeClass('hide');
-                    e.preventDefault();
+                    $errorMessage.text('Please fill in all required fields.');
+                    valid = false;
                 }
             });
 
+            if (!valid) {
+                e.preventDefault();
+                return false;
+            }
+
             if (!$form.data('cc-on-file')) {
                 e.preventDefault();
+                
+                // Show loading state
+                $submitButton.prop('disabled', true).text('Processing...');
+                $form.addClass('loading');
+                
                 Stripe.setPublishableKey($form.data('stripe-publishable-key'));
                 Stripe.createToken({
                     number: $('.card-number').val(),
@@ -104,6 +246,10 @@
         });
 
         function stripeResponseHandler(status, response) {
+            // Remove loading state
+            $submitButton.prop('disabled', false).text('Pay Now ({{ $priceDisplay }})');
+            $form.removeClass('loading');
+            
             if (response.error) {
                 // Display the Stripe error message
                 $errorMessage.text(response.error.message);

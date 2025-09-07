@@ -12,6 +12,8 @@ use App\Http\Controllers\GoogleDriveController;
 use App\Http\Controllers\Admin\AlbumController;
 use Illuminate\Http\Request;
 use App\Http\Controllers\StripeController;  
+use App\Models\UserPayment;
+use App\Models\CreateFolder;
 
 use Illuminate\Support\Facades\Artisan;
 // use Google\Service\Docs\Request;
@@ -194,26 +196,41 @@ Route::group(['prefix' => 'user', 'as' => 'user.', 'namespace' => 'User', 'middl
 
 
 
+// Simple dashboard route for all authenticated users
+Route::middleware(['auth', 'subscription'])->group(function () {
+    Route::get('/dashboard', function () {
+        $user = Auth::user();
+        $user_payments = UserPayment::where('user_id', $user->id)->get();
+        $folders = CreateFolder::where('user_id', $user->id)->get();
+        return view('admin.dashboard', compact('folders', 'user', 'user_payments'));
+    })->name('dashboard');
+});
+
 // Routes accessible to authenticated users only
 Route::middleware(['auth'])->group(function () {
-    Route::resource('dashboard', 'Admin\DashboardController'); // Assuming your DashboardController is in the "Admin" namespace
-    Route::post('/toggle-renew-status/{userId}',[DashboardController::class, 'toggleRenewStatus'])->name('toggle.renew.status');
-    Route::get('/user/account', [DashboardController::class, 'account'])->name('user.account');
-
-
-
-    
     Route::get('stripe', [StripeController::class, 'stripe'])->name('admin.stripe');
     Route::post('stripe', [StripeController::class, 'stripePost'])->name('stripe.post');
-
-
 });
 
 
 
 
+// Trial management routes (Admin only)
+Route::middleware(['auth', 'admin'])->group(function () {
+    Route::get('/admin/trials', [App\Http\Controllers\Admin\TrialController::class, 'index'])->name('admin.trials.index');
+    Route::get('/admin/trials/analytics', [App\Http\Controllers\Admin\TrialController::class, 'analytics'])->name('admin.trials.analytics');
+    Route::get('/admin/trials/export', [App\Http\Controllers\Admin\TrialController::class, 'export'])->name('admin.trials.export');
+});
+
 Route::middleware(['auth'])->group(function () {
-    Route::get('/subscribe', [StripeController::class, 'showSubscriptionForm'])->name('subscribe.form');
+    Route::get('/subscribe', function () {
+        // Redirect to pricing page instead
+        return redirect('/pricing');
+    })->name('subscribe.form');
     Route::post('/subscribe', [StripeController::class, 'subscribeToPlan'])->name('subscribe.plan');
+    
+    // Stripe Elements routes
+    Route::post('/stripe/create-payment-intent', [StripeController::class, 'createPaymentIntent'])->name('stripe.create-payment-intent');
+    Route::get('/stripe/success', [StripeController::class, 'success'])->name('stripe.success');
 });
 

@@ -41,15 +41,6 @@ class SendEventEmails extends Command
             }
         }
 
-/*   Testing: Send both mails to kamrannazir901@gmail.com every second
-         $testEvent = CreateFolder::find(51);
-         if ($testEvent) {
-             Mail::to('kamrannazir901@gmail.com')->send(new MailBeforeEvent($testEvent));
-             Mail::to('kamrannazir901@gmail.com')->send(new MailAfterEvent($testEvent));
-         } else {
-             \Log::error('Test folder with id 44 not found.');
-         }
-*/
 
 
                 // For recurring payment

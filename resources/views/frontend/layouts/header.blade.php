@@ -107,7 +107,17 @@
           </div>
           <div class="col-auto">
             <div class="d-flex align-items-center">
-              <a class="login-info d-flex align-items-center" style="color: #C8E2F9;" href="{{ route('google.login') }}" role="button"><i class="fat fa-user-circle fz30 me-2"></i> <span class="d-none d-xl-block">Sign Up</span></a>
+              @if(Auth::check())
+                <a class="login-info d-flex align-items-center" style="color: #C8E2F9;" href="{{ url('/dashboard') }}" role="button">
+                  <i class="fat fa-user-circle fz30 me-2"></i>
+                  <span class="d-none d-xl-block">Dashboard</span>
+                </a>
+              @else
+                <a class="login-info d-flex align-items-center" style="color: #C8E2F9;" href="{{ route('google.login') }}" role="button">
+                  <i class="fat fa-user-circle fz30 me-2"></i>
+                  <span class="d-none d-xl-block">Sign Up</span>
+                </a>
+              @endif
               <!-- <a href="tel:18002915820" class="ud-btn btn-dark" style="background-color: transparent; border-color:white;"><span class="flaticon-call vam pe-2"></span>920 851 9087</a> -->
               <!-- <a class="ud-btn add-property menu-btn bdrs60 mx-2 mx-xl-4" href="#">SIGN UP <i class="fal fa-arrow-right-long"></i></a> -->
               <!-- <a class="sidemenu-btn filter-btn-right" href="#"><img class="img-1" src="{{asset('front/images/icon/nav-icon-white.svg')}}" alt=""><img class="img-2" src="images/icon/nav-icon-dark.svg" alt=""></a> -->

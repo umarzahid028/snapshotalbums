@@ -29,7 +29,7 @@ class GoogleDriveController extends Controller
         $this->gClient->setApplicationName('snapshot'); // ADD YOUR AUTH2 APPLICATION NAME (WHEN YOUR GENERATE SECRATE KEY)
         $this->gClient->setClientId('1021502306713-dlnt415occ7pi1g5gf47bemggb9m3fnf.apps.googleusercontent.com');
         $this->gClient->setClientSecret('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');
-        $this->gClient->setRedirectUri(route('google.callback'));
+        $this->gClient->setRedirectUri('https://snapshotalbums.dev/auth/google/callback');
         $this->gClient->setDeveloperKey('AIzaSyBILqtwxn5e7RExbFibozAatwyHSAuNS4c');
         $this->gClient->setScopes(array(               
             'https://www.googleapis.com/auth/drive.file',
@@ -140,8 +140,87 @@ class GoogleDriveController extends Controller
     
  public function googleCallback(Request $request)
 {
-    // You can replace this with your real Google login logic later
-    return redirect('/dashboard'); // or wherever you want to send the user after login
+    try {
+        // Check if we have an authorization code
+        if (!$request->get('code')) {
+            return redirect('/')->with('error', 'Authorization failed. Please try again.');
+        }
+
+        // Authenticate with Google using the authorization code
+        $this->gClient->authenticate($request->get('code'));
+        $token = $this->gClient->getAccessToken();
+        
+        if (!$token) {
+            return redirect('/')->with('error', 'Failed to get access token from Google.');
+        }
+
+        // Set the access token
+        $this->gClient->setAccessToken($token);
+
+        // Get user information from Google
+        $google_oauthV2 = new \Google_Service_Oauth2($this->gClient);
+        $googleUserInfo = $google_oauthV2->userinfo->get();
+        
+        $googleUserId = $googleUserInfo->getId();
+        $googleUserEmail = $googleUserInfo->getEmail();
+        $googleUserName = $googleUserInfo->getName();
+
+        // Check if user already exists
+        $user = User::where('google_id', $googleUserId)->first();
+        
+        if (!$user) {
+            // Create new user with default role and trial
+            $user = User::create([
+                'google_id' => $googleUserId,
+                'name' => $googleUserName,
+                'email' => $googleUserEmail,
+                'password' => bcrypt(Str::random(16)), // Random password for OAuth users
+                'role_id' => 2, // Default user role
+                'status' => 'Approved', // Auto-approve Google OAuth users
+                'plan' => 'trial', // Start with trial plan
+                'subscription_active' => true, // Trial is active
+                'trial_ends_at' => now()->addDays(7), // 7-day trial
+            ]);
+        } else {
+            // Update existing user's Google ID if not set
+            if (!$user->google_id) {
+                $user->google_id = $googleUserId;
+            }
+            // Ensure user has a role and is approved
+            if (!$user->role_id) {
+                $user->role_id = 2;
+            }
+            if ($user->status !== 'Approved') {
+                $user->status = 'Approved';
+            }
+            // If user doesn't have a plan, give them a trial
+            if (!$user->plan) {
+                $user->plan = 'trial';
+                $user->subscription_active = true;
+                $user->trial_ends_at = now()->addDays(7);
+            }
+        }
+
+        // Get the refresh token
+        $refreshToken = $this->gClient->getRefreshToken();
+        
+        // Store tokens
+        $user->access_token = json_encode($token);
+        if ($refreshToken) {
+            $user->refresh_token = $refreshToken;
+        }
+        $user->save();
+
+        // Log the user in
+        Auth::login($user);
+
+        // Redirect to dashboard
+        return redirect('/dashboard')->with('success', 'Successfully logged in with Google!');
+        
+    } catch (\Exception $e) {
+        Log::error('Google OAuth Callback Error: ' . $e->getMessage());
+        return redirect('/')->with('error', 'Login failed. Please try again.');
+    }
 }
 
     

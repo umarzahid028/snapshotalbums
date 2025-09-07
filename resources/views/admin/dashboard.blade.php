@@ -129,6 +129,48 @@
 
               @endif
 
+              <!-- Trial Status Banner -->
+              @if($user->plan === 'trial' && $user->trial_ends_at)
+                <div class="alert alert-info mb-4">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                      <strong>🎉 You're on a 7-day free trial!</strong>
+                      <br>
+                      <small>Trial expires on {{ $user->trial_ends_at->format('M d, Y \a\t g:i A') }}</small>
+                    </div>
+                    <div>
+                      <a href="/pricing" class="btn btn-primary btn-sm">Upgrade to Premium</a>
+                    </div>
+                  </div>
+                </div>
+              @elseif($user->plan === 'free')
+                <div class="alert alert-warning mb-4">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                      <strong>📸 You're on the Free Plan</strong>
+                      <br>
+                      <small>Upgrade to Premium for unlimited albums and advanced features</small>
+                    </div>
+                    <div>
+                      <a href="/pricing" class="btn btn-primary btn-sm">Upgrade to Premium</a>
+                    </div>
+                  </div>
+                </div>
+              @elseif($user->plan === 'premium' && $user->subscription_active)
+                <div class="alert alert-success mb-4">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                      <strong>⭐ Premium Active</strong>
+                      <br>
+                      <small>You have access to all premium features</small>
+                    </div>
+                    <div>
+                      <a href="/pricing" class="btn btn-outline-primary btn-sm">Manage Subscription</a>
+                    </div>
+                  </div>
+                </div>
+              @endif
+
             <div class="col-xl-12">
 
               <div class="ps-widget bgc-white bdrs12 mb30 overflow-hidden position-relative" >

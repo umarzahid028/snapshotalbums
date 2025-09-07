@@ -17,7 +17,7 @@ return [
     'google' => [
         'client_id' => env('GOOGLE_CLIENT_ID'),
         'client_secret' => env('GOOGLE_CLIENT_SECRET'),
-        'redirect' => 'https://weduploader.corammers.com/auth/google/callback',
+        'redirect' => 'https://snapshotalbums.dev/auth/google/callback',
         
         // 'redirect' => 'http://localhost/weduploader/google/login',
         'scopes' => [

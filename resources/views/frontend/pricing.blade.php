@@ -96,7 +96,8 @@
 
               <h2 style="color:#355691">Pricing</h2>
 
-              <p>Whether you're using Snapshot Albums for one event or every event, we've got you covered! Check out or pricing and features to learn more.</p>
+              <p>Whether you're using Snapshot Albums for one event or every event, we've got you covered! Check out or pricing and features to learn more.</p></br>
+              <h3><strong>Start free with our 7 day free trial!</strong></h3>
 
             </div>
 
@@ -132,14 +133,14 @@
 
                 <h4 class="">Basic</h4>
 
-                <h1 class="text1">$0</h1>
+                <h1 class="text1">$5.99/month</h1>
                 
                 <p  class="text">The basic level allows for full functionality of Snapshot Albums, but limits album creation to one.
                 If you need access to create more than one album, consider the Premium level.</p>
 
                 <!-- <p class="text">Forever</p> -->
 
-                <img class="price-icon" src="images/icon/pricing-icon-2.svg" alt="">
+                <img class="price-icon" src="/public/images/icon/pricing-icon-2.svg" alt="">
 
               </div>
 
@@ -171,7 +172,15 @@
 
                   <div col-md-12 style="text-align: center;">
 
-                  <a href="{{ route('google.login') }}" class="ud-btn btn-thm" >Get started now<i class="fal fa-arrow-right-long"></i></a>  
+                  @if(Auth::check())
+                    <form method="POST" action="{{ route('subscribe.plan') }}" style="display: inline;">
+                        @csrf
+                        <input type="hidden" name="plan" value="basic">
+                        <button type="submit" class="ud-btn btn-thm">Subscribe to Basic<i class="fal fa-arrow-right-long"></i></button>
+                    </form>
+                  @else
+                    <a href="{{ route('google.login') }}" class="ud-btn btn-thm">Get started now<i class="fal fa-arrow-right-long"></i></a>
+                  @endif  
 
                   </div>
 
@@ -191,13 +200,13 @@
 
                 <h4 class="">Premium</h4>
 
-                <h1 class="text2">$99/year</h1>
+                <h1 class="text2">$9.99/month</h1>
 
                 <p class="text">Perfect for users that want to create albums for all of their events, or need different QR codes to keep their guest's uploads organized.
                 A must have for Event Planners, Venues, Churches or anyone that hosts events.
                 Collect guest's photos and videos and keep them organized!</p>
 
-                <img class="price-icon" src="images/icon/pricing-icon-1.svg" alt="">
+                <img class="price-icon" src="/public/images/icon/pricing-icon-1.svg" alt="">
 
               </div>
 
@@ -235,7 +244,15 @@
 
                   <div col-md-12 style="text-align: center;">
 
-                  <a href="{{ route('google.login') }}" class="ud-btn btn-thm" >Get started now<i class="fal fa-arrow-right-long"></i></a>  
+                  @if(Auth::check())
+                    <form method="POST" action="{{ route('subscribe.plan') }}" style="display: inline;">
+                        @csrf
+                        <input type="hidden" name="plan" value="premium">
+                        <button type="submit" class="ud-btn btn-thm">Subscribe to Premium<i class="fal fa-arrow-right-long"></i></button>
+                    </form>
+                  @else
+                    <a href="{{ route('google.login') }}" class="ud-btn btn-thm">Get started now<i class="fal fa-arrow-right-long"></i></a>
+                  @endif  
 
                   </div>
 
@@ -264,7 +281,7 @@
 
                 <p class="text">per month</p>
 
-                <img class="price-icon" src="images/icon/pricing-icon-3.svg" alt="">
+                <img class="price-icon" src="/public/images/icon/pricing-icon-3.svg" alt="">
 
               </div>
 
@@ -322,7 +339,7 @@
 
         <div class="cta-style2 d-none d-lg-block wow fadeInRight" data-wow-delay="300ms" >
 
-          <img src="images/frontend/homepage-party1.png" style="width: 600px; height: auto; border-radius: 50px; top: -105px !important" alt="snapshot albums party photos">
+          <img src="/public/images/frontend/homepage-party1.png" style="width: 600px; height: auto; border-radius: 50px; top: -105px !important" alt="snapshot albums party photos">
 
         </div>
 
