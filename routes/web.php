@@ -174,10 +174,6 @@ Route::group(['middleware' => 'auth'], function () {
 
 
 
-Route::get('stripe', [StripeController::class, 'stripe'])->name('admin.stripe');
-Route::post('stripe', [StripeController::class, 'stripePost'])->name('stripe.post');
-
-
 });
 
 
@@ -230,7 +226,19 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/subscribe', [StripeController::class, 'subscribeToPlan'])->name('subscribe.plan');
     
     // Stripe Elements routes
+    Route::get('/stripe/payment', [StripeController::class, 'paymentForm'])->name('stripe.payment');
     Route::post('/stripe/create-payment-intent', [StripeController::class, 'createPaymentIntent'])->name('stripe.create-payment-intent');
     Route::get('/stripe/success', [StripeController::class, 'success'])->name('stripe.success');
+    
+    // Subscription management routes
+    Route::post('/stripe/cancel-subscription', [StripeController::class, 'cancelSubscription'])->name('stripe.cancel-subscription');
+    Route::post('/stripe/reactivate-subscription', [StripeController::class, 'reactivateSubscription'])->name('stripe.reactivate-subscription');
+    Route::get('/subscription/manage', [StripeController::class, 'subscriptionManagement'])->name('subscription.manage');
+    
+    // Test subscription creation (for testing only)
+    Route::post('/stripe/test-subscription', [StripeController::class, 'testSubscription'])->name('stripe.test-subscription');
 });
+
+// Stripe webhook (no auth middleware)
+Route::post('/stripe/webhook', [App\Http\Controllers\StripeWebhookController::class, 'handle'])->name('stripe.webhook');
 

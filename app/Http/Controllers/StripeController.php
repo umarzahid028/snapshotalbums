@@ -18,12 +18,40 @@ class StripeController extends Controller
      */
     public function stripe()
     {
-         $user = auth()->user();
-         // Check if the authenticated user has any payment records
-         if ($user->userPayments()->exists()) {
-             return redirect()->back()->with('success', 'You already have a payment record.');
-         }
-         return view('admin.album.stripe.stripe_elements');
+        $user = auth()->user();
+        
+        // Check if user has an active subscription
+        if ($user->stripe_subscription_id) {
+            try {
+                \Stripe\Stripe::setApiKey(env('STRIPE_SECRET'));
+                $subscription = \Stripe\Subscription::retrieve($user->stripe_subscription_id);
+                if ($subscription->status === 'active' || $subscription->status === 'trialing') {
+                    return redirect()->route('dashboard')->with('info', 'You already have an active subscription.');
+                }
+            } catch (\Exception $e) {
+                // Subscription doesn't exist, clear the reference
+                $user->stripe_subscription_id = null;
+                $user->save();
+            }
+        }
+        
+        // Define available plans
+        $plans = [
+            'basic' => [
+                'name' => 'basic',
+                'price' => 599, // $5.99
+                'description' => 'Basic Plan - Limited Albums',
+                'features' => ['Up to 10 Albums', 'Basic Features', 'Email Support']
+            ],
+            'premium' => [
+                'name' => 'premium',
+                'price' => 999, // $9.99
+                'description' => 'Premium Plan - Unlimited Albums',
+                'features' => ['Unlimited Albums', 'All Premium Features', 'Priority Support']
+            ]
+        ];
+        
+        return view('admin.album.stripe.stripe_selection', compact('plans', 'user'));
     }
     
     public function subscribeToPlan(Request $request)
@@ -56,7 +84,34 @@ class StripeController extends Controller
         // Store the selected plan in session for the stripe form
         session(['selected_plan' => $plan]);
         
-        return redirect()->route('admin.stripe')->with('plan', $plan);
+        return redirect()->route('stripe.payment')->with('plan', $plan);
+    }
+    
+    public function paymentForm()
+    {
+        $user = auth()->user();
+        
+        // Check if user has an active subscription
+        if ($user->stripe_subscription_id) {
+            try {
+                \Stripe\Stripe::setApiKey(env('STRIPE_SECRET'));
+                $subscription = \Stripe\Subscription::retrieve($user->stripe_subscription_id);
+                if ($subscription->status === 'active' || $subscription->status === 'trialing') {
+                    return redirect()->route('dashboard')->with('info', 'You already have an active subscription.');
+                }
+            } catch (\Exception $e) {
+                // Subscription doesn't exist, clear the reference
+                $user->stripe_subscription_id = null;
+                $user->save();
+            }
+        }
+        
+        // If no selected plan in session, redirect to plan selection
+        if (!session('selected_plan')) {
+            return redirect()->route('admin.stripe')->with('error', 'Please select a plan first.');
+        }
+        
+        return view('admin.album.stripe.stripe_elements');
     }
     
     public function createPaymentIntent(Request $request)
@@ -68,20 +123,99 @@ class StripeController extends Controller
             $planName = $request->input('plan_name', 'premium');
             $planPrice = $request->input('plan_price', 999);
             
-            $paymentIntent = \Stripe\PaymentIntent::create([
-                'amount' => $planPrice,
+            // Create or retrieve customer
+            $customer = null;
+            if ($user->stripe_customer_id) {
+                try {
+                    $customer = \Stripe\Customer::retrieve($user->stripe_customer_id);
+                } catch (\Exception $e) {
+                    $customer = null;
+                }
+            }
+            
+            if (!$customer) {
+                $customer = \Stripe\Customer::create([
+                    'name' => $user->name,
+                    'email' => $user->email,
+                ]);
+                $user->stripe_customer_id = $customer->id;
+                $user->save();
+            }
+            
+            // Check if user already has an active subscription
+            if ($user->stripe_subscription_id) {
+                try {
+                    $existingSubscription = \Stripe\Subscription::retrieve($user->stripe_subscription_id);
+                    if ($existingSubscription->status === 'active' || $existingSubscription->status === 'trialing') {
+                        return response()->json(['error' => 'User already has an active subscription'], 400);
+                    }
+                } catch (\Exception $e) {
+                    // Subscription doesn't exist in Stripe, clear the local reference
+                    $user->stripe_subscription_id = null;
+                    $user->save();
+                }
+            }
+            
+            // First, create a product and price
+            $product = \Stripe\Product::create([
+                'name' => ucfirst($planName) . ' Plan',
+                'description' => 'Snapshot Albums ' . ucfirst($planName) . ' Subscription',
+            ]);
+            
+            $price = \Stripe\Price::create([
+                'product' => $product->id,
+                'unit_amount' => $planPrice,
                 'currency' => 'usd',
-                'metadata' => [
-                    'user_id' => $user->id,
-                    'plan_name' => $planName,
-                    'plan_price' => $planPrice,
+                'recurring' => [
+                    'interval' => 'month',
                 ],
             ]);
             
-            return response()->json(['clientSecret' => $paymentIntent->client_secret]);
+            // Create subscription with trial period and payment method collection
+            $subscription = \Stripe\Subscription::create([
+                'customer' => $customer->id,
+                'items' => [[
+                    'price' => $price->id,
+                ]],
+                'trial_period_days' => 7, // 7-day trial
+                'payment_behavior' => 'default_incomplete', // Require payment method upfront
+                'payment_settings' => [
+                    'save_default_payment_method' => 'on_subscription',
+                ],
+                'expand' => ['latest_invoice.payment_intent'],
+                'metadata' => [
+                    'user_id' => $user->id,
+                    'plan_name' => $planName,
+                ],
+            ]);
+            
+            // Update user with subscription info
+            $user->stripe_subscription_id = $subscription->id;
+            $user->plan = $planName;
+            $user->subscription_active = true; // Active during trial
+            $user->trial_ends_at = now()->addDays(7);
+            $user->save();
+            
+            // For trial subscriptions, we need to create a setup intent for payment method collection
+            $setupIntent = \Stripe\SetupIntent::create([
+                'customer' => $customer->id,
+                'payment_method_types' => ['card'],
+                'usage' => 'off_session',
+            ]);
+            
+            // Return the setup intent client secret for payment method collection
+            return response()->json([
+                'clientSecret' => $setupIntent->client_secret,
+                'subscriptionId' => $subscription->id,
+                'status' => $subscription->status,
+                'trialEnd' => $subscription->trial_end,
+                'isTrial' => true,
+            ]);
             
         } catch (\Exception $e) {
-            return response()->json(['error' => $e->getMessage()], 500);
+            \Log::error('Stripe createPaymentIntent error: ' . $e->getMessage());
+            \Log::error('User ID: ' . $user->id . ', Plan: ' . $planName . ', Price: ' . $planPrice);
+            return response()->json(['error' => 'Failed to create payment intent: ' . $e->getMessage()], 500);
         }
     }
     
@@ -89,33 +223,198 @@ class StripeController extends Controller
     {
         $user = auth()->user();
         
-        // Get the payment intent from Stripe
+        // Get the setup intent from Stripe
         \Stripe\Stripe::setApiKey(env('STRIPE_SECRET'));
-        $paymentIntent = \Stripe\PaymentIntent::retrieve($request->payment_intent);
         
-        if ($paymentIntent->status === 'succeeded') {
-            // Update user's plan
-            $planName = $paymentIntent->metadata->plan_name ?? 'premium';
-            $planPrice = $paymentIntent->metadata->plan_price ?? 999;
+        try {
+            $setupIntent = \Stripe\SetupIntent::retrieve($request->setup_intent);
             
+            if ($setupIntent->status === 'succeeded') {
+                // Payment method has been saved successfully
+                $user->subscription_active = true;
+                $user->save();
+                
+                // Create payment record
+                UserPayment::updateOrCreate(
+                    ['user_id' => $user->id],
+                    [
+                        'name' => $user->name,
+                        'payment_id' => $setupIntent->id,
+                    ]
+                );
+                
+                return redirect()->route('dashboard')->with('success', 'Payment method added successfully! Your 7-day free trial has started. You will be charged ' . ucfirst($user->plan) . ' after the trial period.');
+            }
+            
+            return redirect()->route('dashboard')->with('error', 'Payment method setup was not successful.');
+            
+        } catch (\Exception $e) {
+            \Log::error('Stripe success error: ' . $e->getMessage());
+            return redirect()->route('dashboard')->with('error', 'An error occurred while processing your payment method.');
+        }
+    }
+    
+    public function testSubscription(Request $request)
+    {
+        try {
+            \Stripe\Stripe::setApiKey(env('STRIPE_SECRET'));
+            
+            $user = auth()->user();
+            $planName = $request->input('plan', 'premium');
+            $planPrice = $planName === 'basic' ? 599 : 999;
+            
+            // Create or retrieve customer
+            $customer = null;
+            if ($user->stripe_customer_id) {
+                try {
+                    $customer = \Stripe\Customer::retrieve($user->stripe_customer_id);
+                } catch (\Exception $e) {
+                    $customer = null;
+                }
+            }
+            
+            if (!$customer) {
+                $customer = \Stripe\Customer::create([
+                    'name' => $user->name,
+                    'email' => $user->email,
+                ]);
+                $user->stripe_customer_id = $customer->id;
+                $user->save();
+            }
+            
+            // First, create a product and price
+            $product = \Stripe\Product::create([
+                'name' => ucfirst($planName) . ' Plan',
+                'description' => 'Snapshot Albums ' . ucfirst($planName) . ' Subscription',
+            ]);
+            
+            $price = \Stripe\Price::create([
+                'product' => $product->id,
+                'unit_amount' => $planPrice,
+                'currency' => 'usd',
+                'recurring' => [
+                    'interval' => 'month',
+                ],
+            ]);
+            
+            // Create subscription with trial period and payment method collection
+            $subscription = \Stripe\Subscription::create([
+                'customer' => $customer->id,
+                'items' => [[
+                    'price' => $price->id,
+                ]],
+                'trial_period_days' => 7, // 7-day trial
+                'payment_behavior' => 'default_incomplete', // Require payment method upfront
+                'payment_settings' => [
+                    'save_default_payment_method' => 'on_subscription',
+                ],
+                'expand' => ['latest_invoice.payment_intent'],
+                'metadata' => [
+                    'user_id' => $user->id,
+                    'plan_name' => $planName,
+                ],
+            ]);
+            
+            // Update user with subscription info
+            $user->stripe_subscription_id = $subscription->id;
             $user->plan = $planName;
             $user->subscription_active = true;
-            $user->renew_status = "1";
+            $user->trial_ends_at = now()->addDays(7);
             $user->save();
             
-            // Create payment record
-            UserPayment::updateOrCreate(
-                ['user_id' => $user->id],
-                [
-                    'name' => $user->name,
-                    'payment_id' => $paymentIntent->id,
-                ]
+            return response()->json([
+                'success' => true,
+                'subscription_id' => $subscription->id,
+                'status' => $subscription->status,
+                'trial_end' => $subscription->trial_end,
+                'message' => 'Subscription created successfully!'
+            ]);
+            
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+    
+    public function cancelSubscription(Request $request)
+    {
+        try {
+            \Stripe\Stripe::setApiKey(env('STRIPE_SECRET'));
+            
+            $user = auth()->user();
+            
+            if (!$user->stripe_subscription_id) {
+                return redirect()->back()->with('error', 'No active subscription found.');
+            }
+            
+            // Cancel the subscription at the end of the current period
+            $subscription = \Stripe\Subscription::retrieve($user->stripe_subscription_id);
+            $subscription->cancel_at_period_end = true;
+            $subscription->save();
+            
+            // Update user status
+            $user->subscription_active = false; // Will be active until period ends
+            $user->save();
+            
+            // Calculate when subscription will end
+            $cancelDate = \Carbon\Carbon::createFromTimestamp($subscription->current_period_end);
+            
+            return redirect()->back()->with('success', 
+                'Your subscription has been cancelled. You will continue to have access until ' . 
+                $cancelDate->format('M d, Y') . '. You will not be charged again.'
             );
             
-            return redirect()->route('dashboard')->with('success', 'Payment successful! Your ' . ucfirst($planName) . ' plan is now active.');
+        } catch (\Exception $e) {
+            \Log::error('Subscription cancellation error: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Failed to cancel subscription. Please try again or contact support.');
+        }
+    }
+    
+    public function reactivateSubscription(Request $request)
+    {
+        try {
+            \Stripe\Stripe::setApiKey(env('STRIPE_SECRET'));
+            
+            $user = auth()->user();
+            
+            if (!$user->stripe_subscription_id) {
+                return redirect()->back()->with('error', 'No subscription found.');
+            }
+            
+            // Reactivate the subscription
+            $subscription = \Stripe\Subscription::retrieve($user->stripe_subscription_id);
+            $subscription->cancel_at_period_end = false;
+            $subscription->save();
+            
+            // Update user status
+            $user->subscription_active = true;
+            $user->save();
+            
+            return redirect()->back()->with('success', 'Your subscription has been reactivated. You will continue to be billed monthly.');
+            
+        } catch (\Exception $e) {
+            \Log::error('Subscription reactivation error: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Failed to reactivate subscription. Please try again or contact support.');
+        }
+    }
+    
+    public function subscriptionManagement()
+    {
+        $user = auth()->user();
+        
+        if (!$user->stripe_subscription_id) {
+            return redirect()->route('pricing')->with('error', 'No active subscription found.');
         }
         
-        return redirect()->route('dashboard')->with('error', 'Payment was not successful.');
+        try {
+            \Stripe\Stripe::setApiKey(env('STRIPE_SECRET'));
+            $subscription = \Stripe\Subscription::retrieve($user->stripe_subscription_id);
+            
+            return view('admin.subscription.management', compact('subscription', 'user'));
+            
+        } catch (\Exception $e) {
+            \Log::error('Subscription management error: ' . $e->getMessage());
+            return redirect()->route('dashboard')->with('error', 'Unable to load subscription details.');
+        }
     }
     
     public function stripePost(Request $request)

@@ -165,7 +165,48 @@
                       <small>You have access to all premium features</small>
                     </div>
                     <div>
-                      <a href="/pricing" class="btn btn-outline-primary btn-sm">Manage Subscription</a>
+                      <div class="btn-group" role="group">
+                        <a href="{{ route('subscription.manage') }}" class="btn btn-outline-primary btn-sm">Manage Subscription</a>
+                        <form method="POST" action="{{ route('stripe.cancel-subscription') }}" style="display: inline;" onsubmit="return confirm('Are you sure you want to cancel your subscription? You will continue to have access until the end of your current billing period.')">
+                          @csrf
+                          <button type="submit" class="btn btn-outline-danger btn-sm">Cancel Subscription</button>
+                        </form>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              @elseif($user->plan === 'basic' && $user->subscription_active)
+                <div class="alert alert-info mb-4">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                      <strong>📸 Basic Plan Active</strong>
+                      <br>
+                      <small>You have access to basic features</small>
+                    </div>
+                    <div>
+                      <div class="btn-group" role="group">
+                        <a href="/pricing" class="btn btn-outline-primary btn-sm">Upgrade to Premium</a>
+                        <form method="POST" action="{{ route('stripe.cancel-subscription') }}" style="display: inline;" onsubmit="return confirm('Are you sure you want to cancel your subscription? You will continue to have access until the end of your current billing period.')">
+                          @csrf
+                          <button type="submit" class="btn btn-outline-danger btn-sm">Cancel Subscription</button>
+                        </form>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              @elseif($user->stripe_subscription_id && !$user->subscription_active)
+                <div class="alert alert-warning mb-4">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                      <strong>⚠️ Subscription Cancelled</strong>
+                      <br>
+                      <small>Your subscription has been cancelled. You will lose access at the end of your current billing period.</small>
+                    </div>
+                    <div>
+                      <form method="POST" action="{{ route('stripe.reactivate-subscription') }}" style="display: inline;">
+                        @csrf
+                        <button type="submit" class="btn btn-success btn-sm">Reactivate Subscription</button>
+                      </form>
                     </div>
                   </div>
                 </div>

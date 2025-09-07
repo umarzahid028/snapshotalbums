@@ -214,7 +214,13 @@ class GoogleDriveController extends Controller
         // Log the user in
         Auth::login($user);
 
-        // Redirect to dashboard
+        // Check if user needs to set up subscription
+        if (!$user->stripe_subscription_id && $user->plan === 'trial') {
+            // New user or user without subscription - redirect to Stripe
+            return redirect('/stripe')->with('info', 'Welcome! Please select a plan to start your free trial.');
+        }
+
+        // Redirect to dashboard for existing users
         return redirect('/dashboard')->with('success', 'Successfully logged in with Google!');
         
     } catch (\Exception $e) {

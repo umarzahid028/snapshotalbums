@@ -132,7 +132,8 @@
     @endphp
     
     <h1 style="color: black;">Snapshot Albums {{ $planName }} - {{ $priceDisplay }}/month</h1>
-    <p>Complete the payment information below to enable access to <strong>{{ $planName }}</strong> features.<br>
+    <p>Complete the payment information below to start your <strong>7-day free trial</strong>.<br>
+    Your card will be charged {{ $priceDisplay }} after the trial period ends.<br>
     Payment is fulfilled securely by Stripe&trade;</p>
     
     <!-- Plan Details -->
@@ -160,7 +161,7 @@
         
         <div class="text-end">
             <button id="submit" class="stripe-button">
-                <span id="button-text">Pay Now ({{ $priceDisplay }})</span>
+                <span id="button-text">Start Free Trial ({{ $priceDisplay }}/month after trial)</span>
                 <div id="spinner" class="spinner"></div>
             </button>
         </div>
@@ -187,7 +188,11 @@
     
     async function initialize() {
         try {
-            const { clientSecret } = await fetch("{{ route('stripe.create-payment-intent') }}", {
+            console.log('Initializing Stripe Elements...');
+            console.log('Plan:', "{{ $selectedPlan['name'] }}");
+            console.log('Price:', {{ $selectedPlan['price'] }});
+            
+            const response = await fetch("{{ route('stripe.create-payment-intent') }}", {
                 method: "POST",
                 headers: { 
                     "Content-Type": "application/json",
@@ -197,16 +202,46 @@
                     plan_name: "{{ $selectedPlan['name'] }}",
                     plan_price: {{ $selectedPlan['price'] }}
                 }),
-            }).then((r) => r.json());
+            });
+            
+            console.log('Response status:', response.status);
+            
+            if (!response.ok) {
+                const errorData = await response.json();
+                console.error('Server error:', errorData);
+                showMessage("Server error: " + (errorData.error || 'Unknown error'));
+                return;
+            }
+            
+            const data = await response.json();
+            console.log('Response data:', data);
+            
+            if (data.error) {
+                console.error('API error:', data.error);
+                showMessage("Error: " + data.error);
+                return;
+            }
+            
+            if (!data.clientSecret) {
+                console.error('No client secret received');
+                showMessage("No payment secret received from server");
+                return;
+            }
+            
+            console.log('Subscription created:', data.subscriptionId);
+            console.log('Trial ends:', new Date(data.trialEnd * 1000));
+            console.log('Is trial:', data.isTrial);
         
-            elements = stripe.elements({ clientSecret });
+            elements = stripe.elements({ clientSecret: data.clientSecret });
         
             const paymentElement = elements.create("payment");
             paymentElement.mount("#payment-element");
             
+            console.log('Stripe Elements initialized successfully');
+            
         } catch (error) {
             console.error('Error initializing Stripe:', error);
-            showMessage("Error loading payment form. Please refresh the page.");
+            showMessage("Error loading payment form: " + error.message);
         }
     }
     
@@ -214,19 +249,14 @@
         e.preventDefault();
         setLoading(true);
     
-        const { error } = await stripe.confirmPayment({
+        // For trial subscriptions, we use confirmSetup instead of confirmPayment
+        const { error } = await stripe.confirmSetup({
             elements,
             confirmParams: {
-                // Make sure to change this to your payment completion page
                 return_url: "{{ route('stripe.success') }}",
             },
         });
     
-        // This point will only be reached if there is an immediate error when
-        // confirming the payment. Otherwise, your customer will be redirected to
-        // your `return_url`. For some payment methods like iDEAL, your customer will
-        // be redirected to an intermediate site first to authorize the payment, then
-        // redirected to the `return_url`.
         if (error.type === "card_error" || error.type === "validation_error") {
             showMessage(error.message);
         } else {

@@ -29,9 +29,14 @@ class CheckSubscription
             return $next($request);
         }
 
-        // If trial has expired, redirect to payment
+        // Check if user has failed payment (subscription exists but not active)
+        if ($this->hasFailedPayment($user)) {
+            return redirect('/pricing')->with('error', 'Your payment failed. Please update your payment method to restore access.');
+        }
+
+        // If trial has expired, redirect to Stripe
         if ($user->plan === 'trial' && $user->trial_ends_at && now()->isAfter($user->trial_ends_at)) {
-            return redirect('/pricing')->with('error', 'Your 7-day trial has expired. Please subscribe to continue using premium features.');
+            return redirect('/stripe')->with('error', 'Your 7-day trial has expired. Please select a plan to continue.');
         }
 
         // If user is on free plan, allow limited access
@@ -39,8 +44,13 @@ class CheckSubscription
             return $next($request);
         }
 
-        // Default: redirect to pricing page
-        return redirect('/pricing')->with('error', 'Please subscribe to access premium features.');
+        // If no active subscription or trial, redirect to Stripe
+        if (!$user->stripe_subscription_id) {
+            return redirect('/stripe')->with('error', 'Please select a plan to continue.');
+        }
+
+        // If no active subscription, redirect to Stripe
+        return redirect('/stripe')->with('error', 'Please update your subscription to continue.');
     }
 
     /**
@@ -50,6 +60,11 @@ class CheckSubscription
     {
         // Premium users with active subscription
         if ($user->plan === 'premium' && $user->subscription_active) {
+            return true;
+        }
+        
+        // Basic users with active subscription
+        if ($user->plan === 'basic' && $user->subscription_active) {
             return true;
         }
 
@@ -64,5 +79,14 @@ class CheckSubscription
         }
 
         return false;
+    }
+    
+    /**
+     * Check if user has a subscription but payment failed
+     */
+    private function hasFailedPayment($user)
+    {
+        // User has a subscription ID but subscription is not active
+        return $user->stripe_subscription_id && !$user->subscription_active;
     }
 }
