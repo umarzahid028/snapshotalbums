@@ -70,6 +70,7 @@
         .stripe-button:disabled {
             background: #aab7c4;
             cursor: not-allowed;
+            opacity: 0.6;
         }
         .hidden {
             display: none;
@@ -164,6 +165,9 @@
                 <span id="button-text">Start Free Trial ({{ $priceDisplay }}/month after trial)</span>
                 <div id="spinner" class="spinner"></div>
             </button>
+            <div id="button-help" class="text-muted small mt-2">
+                <i class="fas fa-info-circle"></i> Please complete all payment information above to enable the button
+            </div>
         </div>
         
         <div id="payment-message" class="hidden"></div>
@@ -176,6 +180,7 @@
     const stripe = Stripe('{{ env('STRIPE_KEY') }}');
     
     let elements;
+    let submitButton;
     
     // Initialize when page loads
     document.addEventListener('DOMContentLoaded', function() {
@@ -191,6 +196,14 @@
             console.log('Initializing Stripe Elements...');
             console.log('Plan:', "{{ $selectedPlan['name'] }}");
             console.log('Price:', {{ $selectedPlan['price'] }});
+            
+            // Get submit button and disable it initially
+            submitButton = document.getElementById('submit');
+            submitButton.disabled = true;
+            
+            // Show help message initially
+            const buttonHelp = document.getElementById('button-help');
+            buttonHelp.style.display = 'block';
             
             const response = await fetch("{{ route('stripe.create-payment-intent') }}", {
                 method: "POST",
@@ -236,6 +249,23 @@
         
             const paymentElement = elements.create("payment");
             paymentElement.mount("#payment-element");
+            
+            // Listen for changes in the payment element
+            paymentElement.on('change', function(event) {
+                const buttonHelp = document.getElementById('button-help');
+                
+                if (event.complete) {
+                    // Enable button when form is complete and valid
+                    submitButton.disabled = false;
+                    buttonHelp.style.display = 'none';
+                    console.log('Payment form is complete and valid');
+                } else {
+                    // Disable button if form is incomplete or invalid
+                    submitButton.disabled = true;
+                    buttonHelp.style.display = 'block';
+                    console.log('Payment form is incomplete or invalid');
+                }
+            });
             
             console.log('Stripe Elements initialized successfully');
             
@@ -294,9 +324,10 @@
             spinner.classList.add("show");
             buttonText.classList.add("hidden");
         } else {
-            submitButton.disabled = false;
+            // Don't automatically enable - let the payment element change listener handle it
             spinner.classList.remove("show");
             buttonText.classList.remove("hidden");
+            // Button will be enabled/disabled by the payment element change listener
         }
     }
 </script>
