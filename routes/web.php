@@ -108,7 +108,22 @@ Route::post('google-drive/file-upload-out-side',[GoogleDriveController::class,'g
 
 Route::get('/pricing', function () {
     return view('frontend.pricing');
-});
+})->name('pricing');
+
+Route::get('/test-subscription', function () {
+    $user = auth()->user();
+    if (!$user) {
+        return 'Not authenticated';
+    }
+    
+    return response()->json([
+        'user_id' => $user->id,
+        'email' => $user->email,
+        'stripe_subscription_id' => $user->stripe_subscription_id,
+        'plan' => $user->plan,
+        'subscription_active' => $user->subscription_active
+    ]);
+})->middleware('auth');
 
 Route::get('/faq', function () {
     return view('frontend.faq');

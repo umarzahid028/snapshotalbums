@@ -16,3 +16,9 @@ yarn-error.log
 /.idea
 .DS_Store
 
+# Environment files and backups
+.env.backup
+.env.*.backup
+*.env.backup
+env-backup
+

@@ -409,11 +409,14 @@ class StripeController extends Controller
             \Stripe\Stripe::setApiKey(env('STRIPE_SECRET'));
             $subscription = \Stripe\Subscription::retrieve($user->stripe_subscription_id);
             
+            \Log::info('Subscription management loaded for user: ' . $user->email . ', Subscription ID: ' . $user->stripe_subscription_id);
+            
             return view('admin.subscription.management', compact('subscription', 'user'));
             
         } catch (\Exception $e) {
             \Log::error('Subscription management error: ' . $e->getMessage());
-            return redirect()->route('dashboard')->with('error', 'Unable to load subscription details.');
+            \Log::error('User ID: ' . $user->id . ', Stripe Subscription ID: ' . $user->stripe_subscription_id);
+            return redirect()->route('dashboard')->with('error', 'Unable to load subscription details: ' . $e->getMessage());
         }
     }
     
