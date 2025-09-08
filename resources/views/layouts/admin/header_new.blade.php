@@ -117,8 +117,8 @@
         </div>
       </div>
       <div class="dashboard__main pl0-md">
-        <div class="dashboard__content bgc-f7">
-          <div class="row pb40">
+        <div class="dashboard__content">
+          <div class="row pb40 p-4">
             <div class="col-lg-12">
               <div class="dashboard_navigationbar d-block d-lg-none">
                 <div class="dropdown">
@@ -159,6 +159,25 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 <script>
+// Mobile navigation dropdown function
+function myFunction() {
+    document.getElementById("myDropdown").classList.toggle("show");
+}
+
+// Close the dropdown if clicked outside of it
+window.onclick = function(event) {
+    if (!event.target.matches('.dropbtn')) {
+        var dropdowns = document.getElementsByClassName("dropdown-content");
+        var i;
+        for (i = 0; i < dropdowns.length; i++) {
+            var openDropdown = dropdowns[i];
+            if (openDropdown.classList.contains('show')) {
+                openDropdown.classList.remove('show');
+            }
+        }
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     // Get the current path
     const currentPath = window.location.pathname;

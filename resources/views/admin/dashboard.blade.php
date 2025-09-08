@@ -81,6 +81,31 @@
     vertical-align: middle !important;
   }
 
+  /* Mobile button layout fixes */
+  @media (max-width: 768px) {
+    .d-flex.gap-2 {
+      flex-direction: column !important;
+      gap: 0.5rem !important;
+    }
+    
+    .d-flex.gap-2 .btn {
+      width: 100% !important;
+      margin-bottom: 0.25rem;
+    }
+    
+    .d-flex.gap-2 .btn:last-child {
+      margin-bottom: 0;
+    }
+    
+    .d-flex.gap-2 form {
+      width: 100% !important;
+    }
+    
+    .d-flex.gap-2 form button {
+      width: 100% !important;
+    }
+  }
+
   </style>
 
 
@@ -165,7 +190,7 @@
                       <small>You have access to all premium features</small>
                     </div>
                     <div>
-                      <div class="btn-group" role="group">
+                      <div class="d-flex gap-2" role="group">
                         <a href="{{ route('subscription.manage') }}" class="btn btn-outline-primary btn-sm">Manage Subscription</a>
                         <form method="POST" action="{{ route('stripe.cancel-subscription') }}" style="display: inline;" onsubmit="return confirm('Are you sure you want to cancel your subscription? You will continue to have access until the end of your current billing period.')">
                           @csrf
@@ -184,7 +209,7 @@
                       <small>You have access to basic features</small>
                     </div>
                     <div>
-                      <div class="btn-group" role="group">
+                      <div class="d-flex gap-2" role="group">
                         <a href="/pricing" class="btn btn-outline-primary btn-sm">Upgrade to Premium</a>
                         <form method="POST" action="{{ route('stripe.cancel-subscription') }}" style="display: inline;" onsubmit="return confirm('Are you sure you want to cancel your subscription? You will continue to have access until the end of your current billing period.')">
                           @csrf

@@ -7,84 +7,85 @@
 body { opacity: 1 !important; }
 .wrapper { opacity: 1 !important; }
 
-/* Modern UI/UX Improvements with Brand Colors */
+/* Ensure mobile navigation works properly */
+.dashboard_navigationbar {
+    z-index: 1000;
+    position: relative;
+}
+
+.dashboard_navigationbar .dropdown-content {
+    z-index: 1001;
+}
+
+/* Match Dashboard Design */
 .subscription-management {
-    background: linear-gradient(135deg, #355691 0%, #2c4a7a 100%);
+    background: transparent;
     min-height: 100vh;
-    padding: 2rem 0;
+    padding: 0;
 }
 
 .main-container {
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(10px);
-    border-radius: 20px;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-    padding: 2rem;
-    margin: 0 auto;
-    max-width: 1200px;
+    background: transparent;
+    padding: 0;
+    margin: 0;
+    max-width: none;
 }
 
 .page-header {
-    text-align: center;
-    margin-bottom: 3rem;
-    padding-bottom: 2rem;
-    border-bottom: 2px solid #f8f9fa;
+    text-align: left;
+    margin-bottom: 2rem;
+    padding-bottom: 0;
+    border-bottom: none;
 }
 
 .page-title {
-    font-size: 2.5rem;
+    font-size: 2rem;
     font-weight: 700;
     color: #355691;
     margin-bottom: 0.5rem;
+    line-height: 1.2;
 }
 
 .page-subtitle {
     color: #6c757d;
-    font-size: 1.1rem;
+    font-size: 1rem;
     font-weight: 400;
+    line-height: 1.4;
 }
 
 .subscription-card {
     background: white;
-    border-radius: 16px;
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
     border: 1px solid #e9ecef;
     transition: all 0.3s ease;
     overflow: hidden;
     margin-bottom: 2rem;
+    height: 100%;
 }
 
 .subscription-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.12);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+    transform: translateY(-2px);
 }
 
 .card-header-modern {
-    background: linear-gradient(135deg, #355691 0%, #2c4a7a 100%);
+    background: #355691;
     color: white;
-    padding: 1.5rem;
+    padding: 1.25rem 1.75rem;
     border: none;
     position: relative;
     overflow: hidden;
 }
 
-.card-header-modern::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(45deg, rgba(255,255,255,0.1) 0%, transparent 100%);
-    pointer-events: none;
-}
-
 .card-header-modern h5 {
     margin: 0;
-    font-size: 1.3rem;
+    font-size: 1.25rem;
     font-weight: 600;
-    position: relative;
-    z-index: 1;
+    color: white;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
 }
 
 .card-body-modern {
@@ -126,23 +127,36 @@ body { opacity: 1 !important; }
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 1rem 0;
+    padding: 1.25rem 0;
     border-bottom: 1px solid #f8f9fa;
+    transition: background-color 0.2s ease;
 }
 
 .info-item:last-child {
     border-bottom: none;
+    padding-bottom: 0;
+}
+
+.info-item:hover {
+    background-color: #f8f9fa;
+    margin: 0 -2rem;
+    padding-left: 2rem;
+    padding-right: 2rem;
+    border-radius: 8px;
 }
 
 .info-label {
     font-weight: 600;
     color: #495057;
     font-size: 1rem;
+    flex: 1;
 }
 
 .info-value {
     color: #212529;
     font-size: 1rem;
+    font-weight: 500;
+    text-align: right;
 }
 
 .btn-modern {
@@ -230,10 +244,11 @@ body { opacity: 1 !important; }
     background: linear-gradient(135deg, #d4edda, #c3e6cb);
     border: 1px solid #c3e6cb;
     border-radius: 16px;
-    padding: 1.5rem;
-    margin: 2rem 0;
+    padding: 2rem;
+    margin: 2.5rem 0;
     position: relative;
     overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
 .trial-banner::before {
@@ -248,79 +263,249 @@ body { opacity: 1 !important; }
 
 .trial-icon {
     color: #355691;
-    font-size: 1.5rem;
-    margin-right: 1rem;
+    font-size: 1.75rem;
+    margin-right: 1.25rem;
 }
 
 .billing-section {
     background: #f8f9fa;
     border-radius: 16px;
-    padding: 2rem;
-    margin-top: 2rem;
+    padding: 2.5rem;
+    margin-top: 2.5rem;
     border: 1px solid #e9ecef;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 .billing-title {
     color: #355691;
     font-weight: 600;
-    font-size: 1.2rem;
-    margin-bottom: 1rem;
+    font-size: 1.3rem;
+    margin-bottom: 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
 }
 
 .billing-text {
     color: #6c757d;
     font-size: 1rem;
-    line-height: 1.6;
+    line-height: 1.7;
+    margin: 0;
 }
 
 .action-buttons {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: 1.5rem;
+    padding: 0.5rem 0;
 }
 
 .action-description {
-    font-size: 0.9rem;
+    font-size: 0.95rem;
     color: #6c757d;
-    margin-top: 0.5rem;
-    line-height: 1.4;
+    margin-top: 0.75rem;
+    line-height: 1.5;
+    padding: 0.75rem;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    border-left: 4px solid #355691;
 }
 
 .back-button {
-    margin-top: 2rem;
+    margin-top: 3rem;
     text-align: center;
+    padding-top: 2rem;
+    border-top: 1px solid #e9ecef;
+}
+
+/* Row spacing improvements */
+.row {
+    margin-bottom: 1rem;
+}
+
+.row:last-child {
+    margin-bottom: 0;
 }
 
 @media (max-width: 768px) {
     .subscription-management {
-        padding: 1rem 0;
+        padding: 0;
+        background: transparent;
     }
     
     .main-container {
-        margin: 0 1rem;
-        padding: 1.5rem;
+        margin: 0;
+        padding: 0 1rem;
     }
     
     .page-title {
-        font-size: 2rem;
+        font-size: 1.75rem;
+        margin-bottom: 0.5rem;
+        line-height: 1.3;
+    }
+    
+    .page-subtitle {
+        font-size: 0.95rem;
+        margin-bottom: 0;
+    }
+    
+    .page-header {
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+    }
+    
+    .subscription-card {
+        margin-bottom: 1rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    }
+    
+    .card-header-modern {
+        padding: 0.875rem 1.25rem;
+    }
+    
+    .card-header-modern h5 {
+        font-size: 1rem;
+        gap: 0.5rem;
     }
     
     .card-body-modern {
-        padding: 1.5rem;
+        padding: 1.25rem;
+    }
+    
+    .info-item {
+        padding: 0.875rem 0;
+        margin-bottom: 0.5rem;
+    }
+    
+    .info-item:last-child {
+        margin-bottom: 0;
+    }
+    
+    .info-label {
+        font-size: 0.9rem;
+    }
+    
+    .info-value {
+        font-size: 0.9rem;
     }
     
     .action-buttons {
-        gap: 0.75rem;
+        gap: 1rem;
+        padding: 0.25rem 0;
+    }
+    
+    .action-description {
+        font-size: 0.85rem;
+        padding: 0.625rem;
+        margin-top: 0.5rem;
+    }
+    
+    .trial-banner {
+        padding: 1.25rem;
+        margin: 1.5rem 0;
+        border-radius: 12px;
+    }
+    
+    .trial-icon {
+        font-size: 1.5rem;
+        margin-right: 1rem;
+    }
+    
+    .billing-section {
+        padding: 1.5rem;
+        margin-top: 1.5rem;
+        border-radius: 12px;
+    }
+    
+    .billing-title {
+        font-size: 1.1rem;
+        margin-bottom: 1rem;
+        gap: 0.5rem;
+    }
+    
+    .billing-text {
+        font-size: 0.9rem;
+        line-height: 1.6;
+    }
+    
+    .back-button {
+        margin-top: 2rem;
+        padding-top: 1.5rem;
+    }
+    
+    .info-item:hover {
+        margin: 0 -1.25rem;
+        padding-left: 1.25rem;
+        padding-right: 1.25rem;
+    }
+    
+    /* Remove hover effects on mobile for better touch experience */
+    .subscription-card:hover {
+        transform: none;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    }
+    
+    /* Improve touch targets for mobile */
+    .btn-modern {
+        padding: 0.875rem 1.25rem;
+        font-size: 0.95rem;
+        min-height: 44px; /* iOS recommended touch target size */
+    }
+    
+    /* Better mobile spacing for alerts */
+    .alert {
+        margin-bottom: 1rem;
+        padding: 0.875rem 1rem;
+        border-radius: 8px;
+    }
+    
+    /* Optimize mobile dashboard navigation spacing */
+    .dashboard_navigationbar {
+        margin-bottom: 1rem;
+    }
+    
+    /* Better mobile row spacing */
+    .row {
+        margin-bottom: 0.5rem;
+    }
+    
+    /* Ensure proper mobile container spacing */
+    .dashboard__content {
+        padding: 0 1rem;
+    }
+    
+    /* Mobile button layout improvements */
+    .d-flex.flex-column.flex-md-row {
+        gap: 0.75rem !important;
+    }
+    
+    .d-flex.flex-column.flex-md-row .btn {
+        width: 100% !important;
+        margin-bottom: 0.5rem;
+    }
+    
+    .d-flex.flex-column.flex-md-row .btn:last-child {
+        margin-bottom: 0;
+    }
+    
+    /* Ensure form elements take full width on mobile */
+    .d-flex.flex-column.flex-md-row form {
+        width: 100% !important;
+        flex: none !important;
     }
 }
 </style>
 
 <div class="subscription-management">
-    <div class="main-container">
-        <div class="page-header">
-            <h1 class="page-title">Subscription Management</h1>
-            <p class="page-subtitle">Manage your subscription and billing preferences</p>
+    <div class="row align-items-center">
+        <div class="col-xxl-12">
+            <div class="dashboard_title_area">
+                <h2 style="color:#355691">Subscription Management</h2>
+                <p class="text">Manage your subscription and billing preferences</p>
+            </div>
         </div>
+    </div>
         
         @if(session('success'))
             <div class="alert alert-success alert-dismissible fade show" role="alert" style="border-radius: 12px; border: none; box-shadow: 0 4px 15px rgba(40, 167, 69, 0.2);">
@@ -400,6 +585,19 @@ body { opacity: 1 !important; }
                                     </button>
                                 </form>
                                 <p class="action-description">Your subscription will continue after the current period.</p>
+                            @elseif($subscription->status === 'trialing')
+                                <div class="d-flex gap-2 flex-column flex-md-row">
+                                    <a href="{{ route('pricing') }}" class="btn btn-primary-modern btn-modern flex-fill">
+                                        <i class="fas fa-plus me-2"></i>Subscribe to Premium
+                                    </a>
+                                    <form method="POST" action="{{ route('stripe.cancel-subscription') }}" style="flex: 1;" onsubmit="return confirm('Are you sure you want to cancel your trial? You will lose access immediately.')">
+                                        @csrf
+                                        <button type="submit" class="btn btn-danger-modern btn-modern w-100">
+                                            <i class="fas fa-times me-2"></i>Cancel Trial
+                                        </button>
+                                    </form>
+                                </div>
+                                <p class="action-description">Upgrade to Premium for full access, or cancel your trial to stop automatic billing.</p>
                             @else
                                 <a href="{{ route('pricing') }}" class="btn btn-primary-modern btn-modern w-100">
                                     <i class="fas fa-plus me-2"></i>Subscribe to Premium
@@ -441,7 +639,6 @@ body { opacity: 1 !important; }
                 <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
             </a>
         </div>
-    </div>
 </div>
 
 <script>
