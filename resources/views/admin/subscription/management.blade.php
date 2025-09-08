@@ -495,6 +495,22 @@ body { opacity: 1 !important; }
         flex: none !important;
     }
 }
+
+/* Desktop button height fix */
+@media (min-width: 768px) {
+    .btn-modern {
+        min-height: 36px !important;
+        padding: 0.5rem 1rem !important;
+        font-size: 0.875rem !important;
+        border-radius: 6px !important;
+    }
+    
+    .action-buttons .btn {
+        min-height: 36px !important;
+        padding: 0.5rem 1rem !important;
+        font-size: 0.875rem !important;
+    }
+}
 </style>
 
 <div class="subscription-management">
